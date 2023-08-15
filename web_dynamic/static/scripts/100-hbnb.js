@@ -45,6 +45,30 @@ $(function () {
       await fetchPlaces({ amenities: Object.keys(filters.amenities), cities: Object.keys(filters.cities), states: Object.keys(filters.states) });
     } catch (e) { console.log({ e }); } finally { $btn.attr('disabled', false); $btn.text('Search'); }
   });
+
+  $('.places').on('click', 'article .reviews span', async (e) => {
+    const $span = $(e.currentTarget);
+    const $reviewsUl = $span.parent().parent().find('ul');
+
+    if ($span.data('hidden') === '1') {
+      try {
+        $span.data('hidden', 0);
+        let reviews = await fetchReviews($span.data('id'));
+        reviews = await Promise.all(reviews.map(async (rev) => {
+          const user = await fetchUser(rev.user_id);
+          return {
+            ...rev,
+            user
+          };
+        }));
+        console.log({ reviews });
+        $reviewsUl.append(reviews.map(renderReview).join('\n'));
+      } catch (e) { console.log({ e }); }
+    } else {
+      $span.data('hidden', 1);
+      $reviewsUl.html('');
+    }
+  });
 });
 
 function onCheckboxValue ($input, filters, $preview, kind) {
@@ -62,6 +86,32 @@ function onCheckboxValue ($input, filters, $preview, kind) {
     names = [...Object.keys(filters[kind]).map(k => filters[kind][k]), ...Object.keys(filters[okind]).map(k => filters[okind][k])];
   }
   $preview.text(names.join(', '));
+}
+
+async function fetchReviews (placeId) {
+  const data = await $.get(`http://0.0.0.0:5001/api/v1/places/${placeId}/reviews`);
+  return data;
+}
+
+async function fetchUser (userId) {
+  const data = await $.get(`http://0.0.0.0:5001/api/v1/users/${userId}`);
+  return data;
+}
+
+function renderReview (review) {
+  const options = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  };
+  const date = new Intl.DateTimeFormat('en-EN', options).format(new Date(review.created_at));
+  return (`
+    <li>
+      <h3>From ${review.user.first_name} ${review.user.last_name} the ${date}</h3>
+      <p>${review.text}</p>
+    </li>
+  `);
 }
 
 async function checkApiStatus () {
@@ -103,6 +153,11 @@ function renderPlace (place) {
   </div>
   <div class="description">
     ${place.description ?? 'No description.'}
+  </div>
+  <div class="reviews">
+    <h2>Reviews <span data-id="${place.id}" data-hidden="1">show</span></h2>
+    <ul>
+    </ul>
   </div>
 </article>`);
 }
