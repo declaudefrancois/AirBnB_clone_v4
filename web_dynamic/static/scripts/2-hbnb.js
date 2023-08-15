@@ -28,7 +28,7 @@ function onCheckboxValue ($input, amenities, $amenitiesPreview) {
 }
 
 async function checkApiStatus () {
-  const { status } = await $.get('http://127.0.0.1:5001/api/v1/status/');
+  const { status } = await $.get('http://0.0.0.0:5001/api/v1/status/');
 
   if (status.match(/OK/s)) { $('div#api_status').addClass('available'); } else { $('div#api_status').removeClass('available'); }
 }

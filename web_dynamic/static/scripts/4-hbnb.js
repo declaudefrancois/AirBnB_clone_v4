@@ -14,6 +14,15 @@ $(function () {
 
   // Listen for changes.
   $('.amenities input').on('change', (e) => onCheckboxValue($(e.currentTarget), amenities, $amenitiesPreview));
+
+  $('.filters button').on('click', async (e) => {
+    const $btn = $(e.currentTarget);
+    $btn.attr('disabled', true);
+    $btn.text('Searching...');
+    try {
+      await fetchPlaces({ amenities: Object.keys(amenities) });
+    } catch (e) { console.log({ e }); } finally { $btn.attr('disabled', false); $btn.text('Search'); }
+  });
 });
 
 function onCheckboxValue ($input, amenities, $amenitiesPreview) {
@@ -46,14 +55,14 @@ function updateAmenitiesPreview ($amenitiesPreview, amenities) {
 function fetchPlaces (filters = {}) {
   const url = 'http://0.0.0.0:5001/api/v1/places_search';
   const $places = $('section.places');
-  $.ajax({
+  return $.ajax({
     type: 'POST',
     url,
     data: JSON.stringify(filters),
+    success,
     headers: {
       'Content-Type': 'application/json'
     },
-    success,
     dataType: 'json'
   });
 
